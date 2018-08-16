@@ -1,4 +1,4 @@
-# FileCase - Lossless File Compression Using Huffman Coding and Encryption Through AES-256
+# FileCase - Lossless File Compression Using Huffman Encoding and Encryption Through AES-256
 > Written by Lewis Kim
 
 ### Description
