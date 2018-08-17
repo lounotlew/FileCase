@@ -9,19 +9,27 @@ from tkinter.messagebox import showinfo
 
 from huffman import HuffmanCoder
 
+import os
 import pickle
 
 
 #
 class FileCase:
 
-	"""."""
+	"""
+
+
+	   Attributes (outside of tkinter buttons/labels):
+	   - self.filename:
+	   - self.file_ext:
+	   - self.abs_filepath: 
+
+
+	"""
 	def __init__(self, master):
 		self.filename = ""
-
-
-
-
+		self.file_ext = ""
+		self.abs_filepath = ""
 
 		# Frames for the home window of FileCase.
 		frame1 = Frame(master)
@@ -65,6 +73,18 @@ class FileCase:
 
 	"""."""
 	def load_file(self):
+		self.abs_filepath = askopenfilename(title = "Choose a file to compress.",
+			filetypes = (("text files","*.txt"), ("doc files","*.docx"), ("jpg files","*.jpg"), ("jpeg files","*.jpeg")))
+
+		self.filename = self.abs_filepath.split("/")[-1]
+		self.file_ext = os.path.splitext(self.abs_filepath)[1]
+
+		print(self.filename, self.file_ext)
+
+
+
+
+		print(self.abs_filepath)
 		return
 
 

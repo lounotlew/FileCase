@@ -109,6 +109,8 @@ class HuffmanCoder:
 
 	"""."""
 	def compress(self):
+		# Need cases for img and docx
+
 		self.char_to_code = self.encode()
 		self.code_to_char = {value:key for key, value in self.char_to_code.items()}
 
