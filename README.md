@@ -26,7 +26,7 @@ PH
 
 ### References
 
-References to the libraries and packages used in PlateMath:
+References to the libraries and packages used in FileCase:
 
 1) ``tkinter``: https://wiki.python.org/moin/TkInter
 2) ``bitstring``: https://pypi.org/project/bitstring/
