@@ -44,11 +44,14 @@ class HuffmanCoder:
 
 	   class variables:
 	   - self.filepath: Filepath of the file to be encoded/compress.
+	   - self.destination_path: 
+	   - self.filename: The name of the file from self.filepath, without the file extension.
+	   - self.file_ext: The file extension of the file from self.filepath.
 	   - self.bit_length: Length of the encoded file content (i.e. length of bit string).
+	   - self.content: Text content of the selected file.
 	   - self.char_to_code: Dictionary of the Huffman Codes. Keys are characters appearing
 	     in the file, and the values are the codes associated with those characters.
 	   - self.code_to_char: key:value reversal of self.char_to_code.
-	   - self.content: Text content of the selected file.
 	   - self.freq_tree: Dictionary whose keys are characters of the content of the file.
 	     and values the frequencies of those characters."""
 	def __init__(self, filepath, destination_path):
@@ -59,7 +62,6 @@ class HuffmanCoder:
 		self.file_ext = os.path.splitext(filepath)[1]
 		self.bit_length = 0
 
-		self.folder_dir = ""
 		self.content = ""
 
 		self.char_to_code = {}
@@ -83,7 +85,6 @@ class HuffmanCoder:
 		else:
 			raise ValueError("Wrong File Type for Huffman Coding.")
 			return
-
 
 		self.freq_tree = self.build_freq_tree(self.content)
 
@@ -169,41 +170,36 @@ class HuffmanCoder:
 			return
 
 
-	"""."""
+	"""Decompress the .bin file located at COMPRESSED_FILEPATH to .txt or .docx, depending on the 
+	   original file (determined by self.file_ext when the instance of this HuffmanCoder was created).
+	   New decompressed file written to DECOMPRESSION_PATH.
+	   Returns the name of the file at DECOMPRESSION_PATH with the correct extention."""
 	def decompress(self, compressed_filepath, decompression_path):
+		bits = BitArray(filename = compressed_filepath)
+
+		encoded_content = bits.bin[0:self.bit_length]
+		decoder = {k:bitarray(v) for k, v in self.char_to_code.items()}
+
+		decoded_chars = bitarray(encoded_content).decode(decoder)
+		decoded_content = ''.join(x for x in decoded_chars)
+
 		if self.file_ext == ".txt":
 			decompressed_filepath = decompression_path + "/" + self.filename + "_(decompressed)" + ".txt"
-
-			bits = BitArray(filename = compressed_filepath)
-
-			encoded_content = bits.bin[0:self.bit_length]
-			decoder = {k:bitarray(v) for k, v in self.char_to_code.items()}
-
-			decoded_chars = bitarray(encoded_content).decode(decoder)
-			decoded_content = ''.join(x for x in decoded_chars)
 
 			with open(decompressed_filepath, 'w+') as decompressed_file:
 				decompressed_file.write(decoded_content)
 				decompressed_file.close()
 
-			return
+			return decompressed_filepath
 
+		if self.file_ext == ".docx":
+			decompressed_filepath = decompression_path + "/" + self.filename + "_(decompressed)" + ".docx"
 
+			document = Document()
+			document.add_paragraph(decoded_content)
+			document.save(decompressed_filepath)
 
-		# elif self.file_ext ==".docx":
-		# 	decompressed_filepath = decompression_path + "-decompressed" + ".txt"
-
-		# bits = BitArray(filename = os.path.splitext(self.filepath)[0] + ".bin")
-
-		# encoded_content = bits.bin[0:self.bit_length]
-		# decoder = {k:bitarray(v) for k, v in self.char_to_code.items()}
-
-		# decoded_chars = bitarray(encoded_content).decode(decoder)
-		# decoded_content = ''.join(x for x in decoded_chars)
-
-		# with open(decompressed_filepath, 'w+') as decompressed_file:
-		# 	decompressed_file.write(decoded_content)
-		# 	decompressed_file.close()
+			return decompressed_filepath
 
 
 	"""Print all ATTRS of this instance of HuffmanEncoder. Used for testing purposes to see

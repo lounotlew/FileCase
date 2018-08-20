@@ -81,6 +81,7 @@ class FileCase:
 
 		if self.filepath == "" or None:
 			showinfo("Error", "Please select a valid file.")
+			self.filenameLabel['text'] = "You have not selected a file yet."
 			return
 
 		showinfo("", "Please select a destination folder to save your compressed or decompressed file to.")
@@ -88,6 +89,8 @@ class FileCase:
 
 		if self.destination_path == "" or None:
 			showinfo("Error", "Please select a valid destination directory.")
+			self.filepath == ""
+			self.filenameLabel['text'] = "You have not selected a file yet."
 			return	
 
 		self.filename = self.filepath.split("/")[-1]
@@ -102,8 +105,6 @@ class FileCase:
 
 		self.updateFilenameLabel()
 		return
-
-
 
 
 	"""."""
@@ -152,11 +153,6 @@ class FileCase:
 		return
 
 
-
-
-
-
-
 	"""."""
 	def decompress_file(self):
 		# Check if the loaded file isn't a .bin file. If True, then it cannot be decompressed.
@@ -183,11 +179,13 @@ class FileCase:
 				huffmanCoder = pickle.load(coder)
 
 			try:
-				huffmanCoder.decompress(compressed_filepath = self.filepath, decompression_path = self.destination_path)
-				showinfo("Success", "Successfully decompressed file to " + self.destination_path)
+				decompressed_file = huffmanCoder.decompress(compressed_filepath = self.filepath, decompression_path = self.destination_path)
 			except:
 				showinfo("Error", "Huffman Decompression Error - .txt")
 				return
+
+			showinfo("Success", "Successfully decompressed file to " + decompressed_file)
+			return
 
 
 		if filetype == "docx" or filetype == "jpeg":
@@ -202,11 +200,12 @@ class FileCase:
 			with open(os.getcwd() + "/app/data/" + data_dir_name + "/" + data_dir_name + "-coder.pickle", 'rb') as coder:
 				huffmanCoder = pickle.load(coder)
 
+			try:
+				decompressed_file = huffmanCoder.decompress(compressed_filepath = self.filepath, decompression_path = self.destination_path)
+			except:
+				showinfo("Error", "Huffman Decompression Error - .txt")
+				return
 
-		# huffcoderDataDir = 
+			showinfo("Success", "Successfully decompressed file to " + decompressed_file)
+			return
 
-		# If data_dir doesn't exist, then it cannot be decompressed.
-		return
-
-
-	"""."""
