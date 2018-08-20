@@ -9,12 +9,13 @@
 from itertools import groupby
 from heapq import *
 import os
+from datetime import datetime
+
 from bitstring import BitArray, BitStream
 from bitarray import bitarray
 
-from docx import Document
-import io
-
+from app.utils import *
+from docx import *
 
 # Node class that makes up a binary tree. Used to constuct a Huffman Tree.
 class Node:
@@ -36,6 +37,7 @@ class Node:
 
 
 # Huffman Coder that encodes file content, and compresses/decompresses it.
+# Designed to be used around FileCase's needs, e.g. checking directories in FileCase/data.
 class HuffmanCoder:
 
 	"""Create a new instance of HuffmanCoder with a FILEPATH of a text file.
@@ -49,15 +51,21 @@ class HuffmanCoder:
 	   - self.content: Text content of the selected file.
 	   - self.freq_tree: Dictionary whose keys are characters of the content of the file.
 	     and values the frequencies of those characters."""
-	def __init__(self, filepath):
+	def __init__(self, filepath, destination_path):
 		self.filepath = filepath
+		self.destination_path = destination_path
+
+		self.filename = self.filepath.split("/")[-1].split(".")[0]
 		self.file_ext = os.path.splitext(filepath)[1]
 		self.bit_length = 0
+
+		self.folder_dir = ""
+		self.content = ""
 
 		self.char_to_code = {}
 		self.code_to_char = {}
 
-		self.content = ""
+		self.compression_time = ""
 
 		if self.file_ext == ".txt":
 			with open(self.filepath, 'r+') as file:
@@ -128,46 +136,81 @@ class HuffmanCoder:
 		return codes
 
 
-	"""."""
+	"""Encode the contents of the selected file (pointer: self.content) """
 	def compress(self):
-		self.char_to_code = self.encode()
-		self.code_to_char = {value:key for key, value in self.char_to_code.items()}
+		# Time of compression as a string.
+		self.compression_time = datetime.strftime(datetime.today(), "%m-%d-%Y-%H-%M")
 
-		compressed_filepath = os.path.splitext(self.filepath)[0] + ".bin"
+		# Coding for .txt files.
+		if self.file_ext == ".txt" or ".docx":
+			self.char_to_code = self.encode()
+			self.code_to_char = {value:key for key, value in self.char_to_code.items()}
 
-		encoded_content = "".join([self.char_to_code[a] for a in self.content])
+			compressed_filepath = self.destination_path + "/" + self.filename + "-" + self.file_ext[1:] + ".bin"
 
-		self.bit_length = len(encoded_content)
+			encoded_content = "".join([self.char_to_code[a] for a in self.content])
 
-		bit_array = BitArray(bin = encoded_content)
+			# fullFileName = self.filename + self.file_ext
+			# filenameAndContent = fullFileName + "//" + encoded_content
 
-		with open(compressed_filepath, 'wb') as compressed_file:
-			compressed_file.write(bit_array.tobytes())
-			compressed_file.close()
+			self.bit_length = len(encoded_content)
+			bit_array = BitArray(bin = encoded_content)
+
+			with open(compressed_filepath, 'wb') as compressed_file:
+				compressed_file.write(bit_array.tobytes())
+				compressed_file.close()
+
+		# Coding for img files.
+		elif self.file_ext == ".jpg" or ".jpeg":
+			print("IMAGE NOT YET SUPPORTED")
+			return
+
+		else:
+			return
 
 
 	"""."""
-	def decompress(self):
-		decompressed_filepath = os.path.splitext(self.filepath)[0] + "-decompressed" + ".txt"
+	def decompress(self, compressed_filepath, decompression_path):
+		if self.file_ext == ".txt":
+			decompressed_filepath = decompression_path + "/" + self.filename + "_(decompressed)" + ".txt"
 
-		bits = BitArray(filename = os.path.splitext(self.filepath)[0] + ".bin")
+			bits = BitArray(filename = compressed_filepath)
 
-		encoded_content = bits.bin[0:self.bit_length]
-		decoder = {k:bitarray(v) for k, v in self.char_to_code.items()}
+			encoded_content = bits.bin[0:self.bit_length]
+			decoder = {k:bitarray(v) for k, v in self.char_to_code.items()}
 
-		decoded_chars = bitarray(encoded_content).decode(decoder)
-		decoded_content = ''.join(x for x in decoded_chars)
+			decoded_chars = bitarray(encoded_content).decode(decoder)
+			decoded_content = ''.join(x for x in decoded_chars)
 
-		with open(decompressed_filepath, 'w+') as decompressed_file:
-			decompressed_file.write(decoded_content)
-			decompressed_file.close()
+			with open(decompressed_filepath, 'w+') as decompressed_file:
+				decompressed_file.write(decoded_content)
+				decompressed_file.close()
+
+			return
+
+
+
+		# elif self.file_ext ==".docx":
+		# 	decompressed_filepath = decompression_path + "-decompressed" + ".txt"
+
+		# bits = BitArray(filename = os.path.splitext(self.filepath)[0] + ".bin")
+
+		# encoded_content = bits.bin[0:self.bit_length]
+		# decoder = {k:bitarray(v) for k, v in self.char_to_code.items()}
+
+		# decoded_chars = bitarray(encoded_content).decode(decoder)
+		# decoded_content = ''.join(x for x in decoded_chars)
+
+		# with open(decompressed_filepath, 'w+') as decompressed_file:
+		# 	decompressed_file.write(decoded_content)
+		# 	decompressed_file.close()
 
 
 	"""Print all ATTRS of this instance of HuffmanEncoder. Used for testing purposes to see
 	   if attrs point properly to the correct data."""
 	def print_attrs(self):
 		print("Filepath: " + self.filepath)
+		print("File Name: " + self.filename)
 		print("File Extension: " + self.file_ext)
-		print("Content: " + self.content)
 		print(self.freq_tree)
 

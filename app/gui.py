@@ -3,11 +3,12 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import simpledialog
 from tkinter import messagebox
-from tkinter.filedialog import askopenfilename
+from tkinter.filedialog import askopenfilename, askdirectory
 from tkinter.messagebox import showerror
 from tkinter.messagebox import showinfo
 
 from app.huffman import HuffmanCoder
+from app.utils import *
 
 import os
 import pickle
@@ -30,6 +31,8 @@ class FileCase:
 		self.filename = ""
 		self.file_ext = ""
 		self.filepath = ""
+		self.destination_path = ""
+		self.data_dir = ""
 
 		# Frames for the home window of FileCase.
 		frame1 = Frame(master)
@@ -74,10 +77,18 @@ class FileCase:
 	"""."""
 	def load_file(self):
 		self.filepath = askopenfilename(title = "Choose a file to compress.",
-			filetypes = (("text files","*.txt"), ("doc files","*.docx"), ("jpg files","*.jpg"), ("jpeg files","*.jpeg")))
+			filetypes = (("bin files","*.bin"), ("text files","*.txt"), ("doc files","*.docx"), ("jpg files","*.jpg"), ("jpeg files","*.jpeg")))
 
 		if self.filepath == "" or None:
+			showinfo("Error", "Please select a valid file.")
 			return
+
+		showinfo("", "Please select a destination folder to save your compressed or decompressed file to.")
+		self.destination_path = askdirectory()
+
+		if self.destination_path == "" or None:
+			showinfo("Error", "Please select a valid destination directory.")
+			return	
 
 		self.filename = self.filepath.split("/")[-1]
 		self.file_ext = os.path.splitext(self.filepath)[1]
@@ -103,6 +114,21 @@ class FileCase:
 
 	"""."""
 	def compress_file(self):
+		# Check if the loaded file is a ".bin" file. If True, then it cannot be compressed.
+		if self.file_ext == ".bin":
+			showinfo("Error", "That file is already compressed. Cannot compress it any further.")
+			return
+
+		# Check if the data directory contains a folder with the same name as self.filename,
+		# i.e. check if a file with the same name has been compressed previously.
+		# File types (.txt, .docx, etc.) matter, i.e. text.txt and text.docx are distinct.
+		if containsDirectory(os.getcwd() + "/app/data", self.filename):
+			self.data_dir = os.getcwd() + "/app/data/" + self.filename
+
+		else:
+			os.makedirs(os.getcwd() + "/app/data/" + self.filename)
+			self.data_dir = os.getcwd() + "/app/data/" + self.filename
+
 		if self.filepath == "" or None:
 			showinfo("Compression Error", "Please load a file first.")
 			return
@@ -111,8 +137,17 @@ class FileCase:
 			print("checked")
 
 		else:
-			huffmanCoder = HuffmanCoder(self.filepath)
-			huffmanCoder.print_attrs()
+			huffmanCoder = HuffmanCoder(self.filepath, self.destination_path)
+
+			try:
+				huffmanCoder.compress()
+				showinfo("Success", "Successfully compressed " + self.filename + ". Please check " + self.destination_path + " for your compressed .bin file. Please do not change the compressed file name.")
+
+				with open(self.data_dir + "/" + self.filename + "-coder.pickle", 'wb') as coder:
+					pickle.dump(huffmanCoder, coder, protocol=pickle.HIGHEST_PROTOCOL)
+
+			except:
+				showinfo("Error", "Huffman Coding Error.")
 
 		return
 
@@ -124,6 +159,53 @@ class FileCase:
 
 	"""."""
 	def decompress_file(self):
+		# Check if the loaded file isn't a .bin file. If True, then it cannot be decompressed.
+		if self.filepath == "":
+			showinfo("Please select a file to decompress first.")
+			return
+
+		if self.file_ext != ".bin":
+			showinfo("Error", "That file is not a .bin file. It cannot be decompressed.")
+			return
+
+		# File type to decompress to.
+		filetype = self.filepath.split("-")[-1].split(".")[0]
+
+		if filetype == "txt" or filetype == "jpg":
+			filename = self.filepath.split("/")[-1][0:-8]
+			data_dir_name = filename + "." + filetype
+
+			if not containsDirectory(os.getcwd() + "/app/data", data_dir_name):
+				showinfo("Decompression Error: Cannot Find Appropriate Huffman Tree. If you changed the file name, please restore it to its original name.")
+				return
+
+			with open(os.getcwd() + "/app/data/" + data_dir_name + "/" + data_dir_name + "-coder.pickle", 'rb') as coder:
+				huffmanCoder = pickle.load(coder)
+
+			try:
+				huffmanCoder.decompress(compressed_filepath = self.filepath, decompression_path = self.destination_path)
+				showinfo("Success", "Successfully decompressed file to " + self.destination_path)
+			except:
+				showinfo("Error", "Huffman Decompression Error - .txt")
+				return
+
+
+		if filetype == "docx" or filetype == "jpeg":
+			filename = self.filepath.split("/")[-1][0:-9]
+			data_dir_name = filename + "." + filetype
+
+			if not containsDirectory(os.getcwd() + "/app/data", data_dir_name):
+				showinfo("Decompression Error: Cannot Find Appropriate Huffman Tree. If you changed the file name, please restore it to its original name.")
+				return
+
+			
+			with open(os.getcwd() + "/app/data/" + data_dir_name + "/" + data_dir_name + "-coder.pickle", 'rb') as coder:
+				huffmanCoder = pickle.load(coder)
+
+
+		# huffcoderDataDir = 
+
+		# If data_dir doesn't exist, then it cannot be decompressed.
 		return
 
 
