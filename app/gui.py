@@ -14,18 +14,23 @@ import os
 import pickle
 
 
-#
+# GUI Class for FileCase. Uses HuffmanCoder to compress/decompress.
 class FileCase:
 
-	"""
-
+	"""GUI Class for FileCase.
 
 	   Attributes (outside of tkinter buttons/labels):
 	   - self.filename:
 	   - self.file_ext:
-	   - self.filepath: 
+	   - self.filepath:
+	   - self.destination_path:
+	   - self.data_dir:
 
-
+	   Functions:
+	   - load_file():
+	   - updateFileNameLabel():
+	   - compress_file():
+	   - decompress_file():
 	"""
 	def __init__(self, master):
 		self.filename = ""
@@ -47,7 +52,7 @@ class FileCase:
 		frame5.pack()
 
 		# A welcome label.
-		self.welcomeLabel = Label(frame1, text = "FileCase: Lossless File Compressor and Encryptor", font = ("Helvetica", 16))
+		self.welcomeLabel = Label(frame1, text = "FileCase: Lossless File Compressor and Encrypter", font = ("Helvetica", 16))
 		self.welcomeLabel.grid(row = 0)
 
 		# A label for the loaded filename. Initialized as "You have not selected a file yet." until the user selects a file.
@@ -72,9 +77,7 @@ class FileCase:
 		self.encryptBooleanCheckbox.grid(row = 4)
 
 
-
-
-	"""."""
+	"""Set SELF.FILEPATH and SELF.DESTINATION_PATH to the directory of a file the user selects, i.e. 'load the file'."""
 	def load_file(self):
 		self.filepath = askopenfilename(title = "Choose a file to compress.",
 			filetypes = (("bin files","*.bin"), ("text files","*.txt"), ("doc files","*.docx"), ("jpg files","*.jpg"), ("jpeg files","*.jpeg")))
@@ -101,19 +104,18 @@ class FileCase:
 			self.updateFilenameLabel()
 			return
 
-		# Image if:
-
 		self.updateFilenameLabel()
 		return
 
 
-	"""."""
+	"""Update self.filenameLabel to display the file name of the selected file, without the direcory
+	   (i.e. Users/John/file.txt becomes file.txt)."""
 	def updateFilenameLabel(self):
 		self.filenameLabel['text'] = self.filename
 
 		return
 
-	"""."""
+	"""Create a new instance of HuffmanCoder and compress the file located at self.filepath to self.destination_path."""
 	def compress_file(self):
 		# Check if the loaded file is a ".bin" file. If True, then it cannot be compressed.
 		if self.file_ext == ".bin":
@@ -153,7 +155,8 @@ class FileCase:
 		return
 
 
-	"""."""
+	"""Load the existing serialized HuffmanCoder pickle file associated with the binary file at self.filepath.
+	   Then, decompress the binary file to self.destination_path."""
 	def decompress_file(self):
 		# Check if the loaded file isn't a .bin file. If True, then it cannot be decompressed.
 		if self.filepath == "":
@@ -186,7 +189,6 @@ class FileCase:
 
 			showinfo("Success", "Successfully decompressed file to " + decompressed_file)
 			return
-
 
 		if filetype == "docx" or filetype == "jpeg":
 			filename = self.filepath.split("/")[-1][0:-9]
