@@ -137,7 +137,24 @@ class FileCase:
 			return
 
 		if self.encryptBoolean.get():
-			print("checked")
+			password = simpledialog.askstring("Enter a Password", "Please enter a password for your encrypted file. Your password must be 16, 24, or 32 characters long.")
+
+			if len(password) != 16 and len(password) != 24 and len(password) != 32:
+				showinfo("Error", "Wrong password length. Please make sure your password is 16, 24, or 32 characters long.")
+				return
+
+			showinfo("Warning", "Your password will not be stored anywhere. Please remember it.")
+
+			huffmanCoder = HuffmanCoder(self.filepath, self.destination_path, encrypted = True)
+
+			huffmanCoder.compress(encrypt = True, password = password)
+			showinfo("Success", "Successfully compressed and encrypted" + self.filename + ". Please check " + self.destination_path + " for your compressed .bin file. Please do not change the compressed file name.")
+
+			with open(self.data_dir + "/" + self.filename + "-coder.pickle", 'wb') as coder:
+				pickle.dump(huffmanCoder, coder, protocol=pickle.HIGHEST_PROTOCOL)
+
+			# except:
+			# 	showinfo("Error", "Huffman Coding Error.")
 
 		else:
 			huffmanCoder = HuffmanCoder(self.filepath, self.destination_path)
@@ -170,6 +187,8 @@ class FileCase:
 		# File type to decompress to.
 		filetype = self.filepath.split("-")[-1].split(".")[0]
 
+		# Check if the selected binary file was compressed from a .txt or .jpg file.
+		# Omit the last 8 characters from the filename string to get the filename without file extension.
 		if filetype == "txt" or filetype == "jpg":
 			filename = self.filepath.split("/")[-1][0:-8]
 			data_dir_name = filename + "." + filetype
@@ -181,16 +200,9 @@ class FileCase:
 			with open(os.getcwd() + "/app/data/" + data_dir_name + "/" + data_dir_name + "-coder.pickle", 'rb') as coder:
 				huffmanCoder = pickle.load(coder)
 
-			try:
-				decompressed_file = huffmanCoder.decompress(compressed_filepath = self.filepath, decompression_path = self.destination_path)
-			except:
-				showinfo("Error", "Huffman Decompression Error - .txt")
-				return
-
-			showinfo("Success", "Successfully decompressed file to " + decompressed_file)
-			return
-
-		if filetype == "docx" or filetype == "jpeg":
+		# Check if the selected binary file was compressed from a .docx or .jpeg file.
+		# Omit the last 9 characters from the filename string to get the filename without file extension.
+		elif filetype == "docx" or filetype == "jpeg":
 			filename = self.filepath.split("/")[-1][0:-9]
 			data_dir_name = filename + "." + filetype
 
@@ -198,10 +210,22 @@ class FileCase:
 				showinfo("Decompression Error: Cannot Find Appropriate Huffman Tree. If you changed the file name, please restore it to its original name.")
 				return
 
-			
 			with open(os.getcwd() + "/app/data/" + data_dir_name + "/" + data_dir_name + "-coder.pickle", 'rb') as coder:
-				huffmanCoder = pickle.load(coder)
+				huffmanCoder = pickle.load(coder)	
 
+		if huffmanCoder.encrypted == True:
+			password = simpledialog.askstring("Enter Your Password", "Please enter the password you used to encrypt this file.")
+
+			try:
+				decompressed_file = huffmanCoder.decompress(compressed_filepath = self.filepath, decompression_path = self.destination_path, decrypt = True, password = password)
+			except:
+				showinfo("Error", "Huffman Decompression/Decryption Error: Please check your password.")
+				return
+
+			showinfo("Success", "Successfully decompressed file to " + decompressed_file)
+			return
+
+		else:
 			try:
 				decompressed_file = huffmanCoder.decompress(compressed_filepath = self.filepath, decompression_path = self.destination_path)
 			except:
@@ -210,4 +234,25 @@ class FileCase:
 
 			showinfo("Success", "Successfully decompressed file to " + decompressed_file)
 			return
+
+		# if filetype == "docx" or filetype == "jpeg":
+		# 	filename = self.filepath.split("/")[-1][0:-9]
+		# 	data_dir_name = filename + "." + filetype
+
+		# 	if not containsDirectory(os.getcwd() + "/app/data", data_dir_name):
+		# 		showinfo("Decompression Error: Cannot Find Appropriate Huffman Tree. If you changed the file name, please restore it to its original name.")
+		# 		return
+
+			
+		# 	with open(os.getcwd() + "/app/data/" + data_dir_name + "/" + data_dir_name + "-coder.pickle", 'rb') as coder:
+		# 		huffmanCoder = pickle.load(coder)
+
+		# 	try:
+		# 		decompressed_file = huffmanCoder.decompress(compressed_filepath = self.filepath, decompression_path = self.destination_path)
+		# 	except:
+		# 		showinfo("Error", "Huffman Decompression Error - .txt")
+		# 		return
+
+		# 	showinfo("Success", "Successfully decompressed file to " + decompressed_file)
+		# 	return
 

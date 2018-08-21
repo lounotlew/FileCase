@@ -3,7 +3,10 @@
 
 ### Description
 
-PH Description.
+FileCase is a lightweight desktop application for .txt and .docx file compression/decompression running on Python, using tkinter for its GUI.
+
+
+The idea behind FileCase's internal structure is that . However, this requires that the user does not change the compressed binary file's name in any way.
 
 
 

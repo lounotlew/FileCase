@@ -15,6 +15,7 @@ from bitstring import BitArray, BitStream
 from bitarray import bitarray
 
 from app.utils import *
+from app.AESCipher import AESCipher
 from docx import *
 
 # Node class that makes up a binary tree. Used to constuct a Huffman Tree.
@@ -53,8 +54,9 @@ class HuffmanCoder:
 	     in the file, and the values are the codes associated with those characters.
 	   - self.code_to_char: key:value reversal of self.char_to_code.
 	   - self.freq_tree: Dictionary whose keys are characters of the content of the file.
-	     and values the frequencies of those characters."""
-	def __init__(self, filepath, destination_path):
+	     and values the frequencies of those characters.
+	   - self.encrypted: Whether or not the content of the file is to be encrypted."""
+	def __init__(self, filepath, destination_path, encrypted=False):
 		self.filepath = filepath
 		self.destination_path = destination_path
 
@@ -67,7 +69,9 @@ class HuffmanCoder:
 		self.char_to_code = {}
 		self.code_to_char = {}
 
-		self.compression_time = ""
+		self.encrypted = encrypted
+
+		self.bs = 16
 
 		if self.file_ext == ".txt":
 			with open(self.filepath, 'r+') as file:
@@ -103,12 +107,12 @@ class HuffmanCoder:
 		return freq
 
 
-	"""Encode the contents of self.filepath (i.e. self.content) using the Huffman Coding Algorithm.
+	"""Encode the characters of TO_ENCODE using the Huffman Coding Algorithm.
 	   This function constructs a Huffman Tree, and returns a dictionary whose keys are characters
 	   in self.content, and values are the bit code associated with that character.
 
 	   Help From: https://www.techrepublic.com/article/huffman-coding-in-python/"""
-	def encode(self):
+	def encode(self, to_encode):
 		codes = {}
 
 		def codeIt(s, node):
@@ -121,7 +125,7 @@ class HuffmanCoder:
 				codeIt(s+"0", node.left)
 				codeIt(s+"1", node.right)
 
-		queue = [Node(a, len(list(b))) for a, b in groupby(sorted(self.content))]
+		queue = [Node(a, len(list(b))) for a, b in groupby(sorted(to_encode))]
 		heapify(queue)
 
 		while len(queue) > 1:
@@ -136,52 +140,70 @@ class HuffmanCoder:
 
 		return codes
 
+	def _pad(self, s):
+		return s + (self.bs - len(s) % self.bs) * chr(self.bs - len(s) % self.bs)
 
-	"""Encode the contents of the selected file (pointer: self.content) """
-	def compress(self):
-		# Time of compression as a string.
-		self.compression_time = datetime.strftime(datetime.today(), "%m-%d-%Y-%H-%M")
+	"""Encode the contents of the selected file (pointer: self.content)."""
+	def compress(self, encrypt = False, password = ""):
+
+		compressed_filepath = self.destination_path + "/" + self.filename + "-" + self.file_ext[1:] + ".bin"
 
 		# Coding for .txt files.
 		if self.file_ext == ".txt" or ".docx":
-			self.char_to_code = self.encode()
-			self.code_to_char = {value:key for key, value in self.char_to_code.items()}
+			if encrypt == True:
+				self.encrypted = True
 
-			compressed_filepath = self.destination_path + "/" + self.filename + "-" + self.file_ext[1:] + ".bin"
+				cipher = AESCipher(password)
 
-			encoded_content = "".join([self.char_to_code[a] for a in self.content])
+				self.char_to_code = self.encode(to_encode = self.content)
+				self.code_to_char = {value:key for key, value in self.char_to_code.items()}
+				encoded_content = "".join([self.char_to_code[a] for a in self.content])
+				self.bit_length = len(encoded_content)
+				encrypted_content = cipher.encrypt(encoded_content)
 
-			# fullFileName = self.filename + self.file_ext
-			# filenameAndContent = fullFileName + "//" + encoded_content
+				with open(compressed_filepath, 'wb') as compressed_file:
+					compressed_file.write(encrypted_content)
+					compressed_file.close()
 
-			self.bit_length = len(encoded_content)
-			bit_array = BitArray(bin = encoded_content)
+			else:
+				self.char_to_code = self.encode(to_encode = self.content)
+				self.code_to_char = {value:key for key, value in self.char_to_code.items()}
+				encoded_content = "".join([self.char_to_code[a] for a in self.content])
 
-			with open(compressed_filepath, 'wb') as compressed_file:
-				compressed_file.write(bit_array.tobytes())
-				compressed_file.close()
+				self.bit_length = len(encoded_content)
+				bit_array = BitArray(bin = encoded_content)
 
-		# Coding for img files.
-		elif self.file_ext == ".jpg" or ".jpeg":
-			print("IMAGE NOT YET SUPPORTED")
-			return
-
-		else:
-			return
+				with open(compressed_filepath, 'wb') as compressed_file:
+					compressed_file.write(bit_array.tobytes())
+					compressed_file.close()
 
 
 	"""Decompress the .bin file located at COMPRESSED_FILEPATH to .txt or .docx, depending on the 
 	   original file (determined by self.file_ext when the instance of this HuffmanCoder was created).
 	   New decompressed file written to DECOMPRESSION_PATH.
 	   Returns the name of the file at DECOMPRESSION_PATH with the correct extention."""
-	def decompress(self, compressed_filepath, decompression_path):
-		bits = BitArray(filename = compressed_filepath)
+	def decompress(self, compressed_filepath, decompression_path, decrypt = False, password = ""):
+		if decrypt == True:
+			opened_file = open(compressed_filepath, 'rb').read()
+			cipher = AESCipher(password)
+			decrypted_content = cipher.decrypt(opened_file)
 
-		encoded_content = bits.bin[0:self.bit_length]
-		decoder = {k:bitarray(v) for k, v in self.char_to_code.items()}
+			encoded_content = BitArray(bin = decrypted_content).bin[0:self.bit_length]
 
-		decoded_chars = bitarray(encoded_content).decode(decoder)
-		decoded_content = ''.join(x for x in decoded_chars)
+			decoder = {k:bitarray(v) for k, v in self.char_to_code.items()}
+			decoded_chars = bitarray(encoded_content).decode(decoder)
+
+			decoded_content = ''.join(x for x in decoded_chars)
+
+		else:
+			bits = BitArray(filename = compressed_filepath)
+
+			encoded_content = bits.bin[0:self.bit_length]
+			decoder = {k:bitarray(v) for k, v in self.char_to_code.items()}
+
+			decoded_chars = bitarray(encoded_content).decode(decoder)
+
+			decoded_content = ''.join(x for x in decoded_chars)
 
 		if self.file_ext == ".txt":
 			decompressed_filepath = decompression_path + "/" + self.filename + "_(decompressed)" + ".txt"
@@ -202,7 +224,7 @@ class HuffmanCoder:
 			return decompressed_filepath
 
 
-	"""Print all ATTRS of this instance of HuffmanEncoder. Used for testing purposes to see
+	"""Print some attributes of this instance of HuffmanEncoder. Used for testing purposes to see
 	   if attrs point properly to the correct data."""
 	def print_attrs(self):
 		print("Filepath: " + self.filepath)
