@@ -255,7 +255,7 @@ class FileCase:
 
 	"""Decrypt the loaded file using AES-256 CFB. Files to be decrypted must be a .bin file.
 	   User-given passwords are not saved or serialized anywhere, and must be remembered by the user.
-	   Writes encrypted data to a .txt file or .docx file, depending on its original type."""
+	   Writes decrypted data to a .txt file or .docx file, depending on its original type."""
 	def decrypt_file(self):
 		if self.filepath == "" or None:
 			showinfo("Error", "Please select a file to encrypt first. Files must be .txt or .docx files.")

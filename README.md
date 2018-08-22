@@ -3,16 +3,15 @@
 
 ### Description
 
-FileCase is a lightweight desktop application for .txt and .docx file compression/decompression running on Python, using tkinter for its GUI.
+FileCase is a lightweight desktop application written in Python for lossless compression or AES-256 CFB encryption of ``.txt`` and ``.docx`` files. If a file is compressed, the ``HuffmanCoder`` object instance that compressed the file (which contains the Huffman Coding Tree) is serialized into a pickle file inside ``FileCase/app/data`` following a very specific directory structure for data peristence, and the user only needs to worry about the compressed ``.bin`` file, without having to keep track of both the compressed file and a file containing the Huffman Coding Tree.
 
+If a file is encrypted instead, the user-given password to encrypt the file is not stored or serialized anywhere; i is up to the user to remember and keep track of the password. The encrypted data is written to a ``.bin`` file, and once decrypted it will be re-written into a ``.txt`` or ``.docx`` file, depending on the original file extention.
 
-The idea behind FileCase's internal structure is that . However, this requires that the user does not change the compressed binary file's name in any way.
-
-
+In both cases, to maintain data persistence, the compressed/encrypted files' names cannot be changed, or the application will not be able to properly decompress/decrypt.
 
 ### Installation
 
-FileCase was written in Python 3.6, and may not work with Python 2.
+FileCase was written in Python 3.6, and will not work with Python 2.
 
 Required packages:
 - ``tkinter`` (``pip3 install tkinter``)
@@ -22,11 +21,11 @@ Required packages:
 - ``heapq`` (part of the Python library)
 - ``pycrypto`` (``pip3 install pycrypto``)
 
-PH
+To run this application, go inside the ``FileCase`` directory, and run the following command:
 
-To use this application,
+``python3 run.py``
 
-PH
+and the application is ready for use. FileCase will maintain a directory structure for compressed/encrypted files within itself, and the user only needs to worry about properly storing the compressed/decompressed ``.bin`` files, without changing its names.
 
 ### References
 
