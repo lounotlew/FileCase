@@ -20,6 +20,7 @@ Required packages:
 - ``bitarray`` (``pip3 install bitarray``)
 - ``python-docx`` (``pip3 install python-docx``)
 - ``heapq`` (part of the Python library)
+- ``pycrypto`` (``pip3 install pycrypto``)
 
 PH
 
@@ -36,3 +37,4 @@ References to the libraries and packages used in FileCase:
 3) ``bitarray``: https://pypi.org/project/bitarray/
 4) ``python-docx``: https://python-docx.readthedocs.io/en/latest/
 5) ``heapq``: https://docs.python.org/3.0/library/heapq.html
+6) ``pycrypto``: https://pypi.org/project/pycrypto/

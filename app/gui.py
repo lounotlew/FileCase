@@ -8,6 +8,7 @@ from tkinter.messagebox import showerror
 from tkinter.messagebox import showinfo
 
 from app.huffman import HuffmanCoder
+from app.AESCipher import AESCipher
 from app.utils import *
 
 import os
@@ -45,11 +46,13 @@ class FileCase:
 		frame3 = Frame(master)
 		frame4 = Frame(master)
 		frame5 = Frame(master)
+		frame6 = Frame(master)
 		frame1.pack()
 		frame2.pack()
 		frame3.pack()
 		frame4.pack()
 		frame5.pack()
+		frame6.pack()
 
 		# A welcome label.
 		self.welcomeLabel = Label(frame1, text = "FileCase: Lossless File Compressor and Encrypter", font = ("Helvetica", 16))
@@ -63,18 +66,25 @@ class FileCase:
 		self.loadfileButton = Button(frame3, text = "Load File", font = ("Helvetica", 13), command = self.load_file)
 		self.loadfileButton.grid(row = 2)
 
-		# A Button that opens a file select window for the user to select a file to compress/encrypt.
+		# A Button that compresses the loaded file to the user-selected destination path. Only accepts .txt or .docx files.
 		self.compressButton = Button(frame4, text = "Compress File", font = ("Helvetica", 13), command = self.compress_file)
 		self.compressButton.grid(row = 3, column = 0)
 
-		# A Button that opens a file select window for the user to select a file to decompress/decrypt.
+		# A Button that decompresses the loaded file to the user-selected destination path. Only accepts .bin files.
 		self.decompressButton = Button(frame4, text = "Decompress File", font = ("Helvetica", 13), command = self.decompress_file)
 		self.decompressButton.grid(row = 3, column = 1)
 
-		# Checkbox that determines whether to encrypt the file being compressed or not.
-		self.encryptBoolean = IntVar()
-		self.encryptBooleanCheckbox = Checkbutton(frame5, text = "Encrypt the File to Compress", variable = self.encryptBoolean)
-		self.encryptBooleanCheckbox.grid(row = 4)
+		# A Button that encrypts the loaded file to the user-selected destination path. Only accepts .txt or .docx files.
+		self.encryptButton = Button(frame5, text = "Encrypt File", font = ("Helvetica", 13), command = self.encrypt_file)
+		self.encryptButton.grid(row = 4, column = 0)
+
+		# A Button that decrypts the loaded file to the user-selected destination path. Only accepts .txt or .docx files.
+		self.encryptButton = Button(frame5, text = "Decrypt File", font = ("Helvetica", 13), command = self.decrypt_file)
+		self.encryptButton.grid(row = 4, column = 1)
+
+		# Test button.
+		self.testButton = Button(frame6, text = "Test", font = ("Helvetica", 13), command = self.test)
+		self.testButton.grid(row = 5, column = 0)
 
 
 	"""Set SELF.FILEPATH and SELF.DESTINATION_PATH to the directory of a file the user selects, i.e. 'load the file'."""
@@ -112,8 +122,8 @@ class FileCase:
 	   (i.e. Users/John/file.txt becomes file.txt)."""
 	def updateFilenameLabel(self):
 		self.filenameLabel['text'] = self.filename
-
 		return
+
 
 	"""Create a new instance of HuffmanCoder and compress the file located at self.filepath to self.destination_path."""
 	def compress_file(self):
@@ -136,38 +146,18 @@ class FileCase:
 			showinfo("Compression Error", "Please load a file first.")
 			return
 
-		if self.encryptBoolean.get():
-			password = simpledialog.askstring("Enter a Password", "Please enter a password for your encrypted file. Your password must be 16, 24, or 32 characters long.")
+		huffmanCoder = HuffmanCoder(self.filepath, self.destination_path)
 
-			if len(password) != 16 and len(password) != 24 and len(password) != 32:
-				showinfo("Error", "Wrong password length. Please make sure your password is 16, 24, or 32 characters long.")
-				return
-
-			showinfo("Warning", "Your password will not be stored anywhere. Please remember it.")
-
-			huffmanCoder = HuffmanCoder(self.filepath, self.destination_path, encrypted = True)
-
-			huffmanCoder.compress(encrypt = True, password = password)
-			showinfo("Success", "Successfully compressed and encrypted" + self.filename + ". Please check " + self.destination_path + " for your compressed .bin file. Please do not change the compressed file name.")
+		try:
+			compressed_filepath = huffmanCoder.compress()
+			showinfo("Success", "Successfully compressed " + self.filename + " to " + compressed_filepath + ". Please do not change the compressed file name.")
 
 			with open(self.data_dir + "/" + self.filename + "-coder.pickle", 'wb') as coder:
 				pickle.dump(huffmanCoder, coder, protocol=pickle.HIGHEST_PROTOCOL)
 
-			# except:
-			# 	showinfo("Error", "Huffman Coding Error.")
-
-		else:
-			huffmanCoder = HuffmanCoder(self.filepath, self.destination_path)
-
-			try:
-				huffmanCoder.compress()
-				showinfo("Success", "Successfully compressed " + self.filename + ". Please check " + self.destination_path + " for your compressed .bin file. Please do not change the compressed file name.")
-
-				with open(self.data_dir + "/" + self.filename + "-coder.pickle", 'wb') as coder:
-					pickle.dump(huffmanCoder, coder, protocol=pickle.HIGHEST_PROTOCOL)
-
-			except:
-				showinfo("Error", "Huffman Coding Error.")
+		except:
+			showinfo("Error", "Huffman Coding Error.")
+			return
 
 		return
 
@@ -213,46 +203,114 @@ class FileCase:
 			with open(os.getcwd() + "/app/data/" + data_dir_name + "/" + data_dir_name + "-coder.pickle", 'rb') as coder:
 				huffmanCoder = pickle.load(coder)	
 
-		if huffmanCoder.encrypted == True:
-			password = simpledialog.askstring("Enter Your Password", "Please enter the password you used to encrypt this file.")
-
-			try:
-				decompressed_file = huffmanCoder.decompress(compressed_filepath = self.filepath, decompression_path = self.destination_path, decrypt = True, password = password)
-			except:
-				showinfo("Error", "Huffman Decompression/Decryption Error: Please check your password.")
-				return
-
-			showinfo("Success", "Successfully decompressed file to " + decompressed_file)
+		try:
+			decompressed_file = huffmanCoder.decompress(compressed_filepath = self.filepath, decompression_path = self.destination_path)
+		except:
+			showinfo("Error", "HuffmanCoder Decompression Error (201)")
 			return
+
+		showinfo("Success", "Successfully decompressed file to " + decompressed_file)
+		return
+
+
+	"""Encrypt the loaded file using AES-256 CFB. Files to be encrypted must be either .txt of .docx files.
+	   User-given passwords are not saved or serialized anywhere, and must be remembered by the user.
+	   Writes encrypted data to a binary file."""
+	def encrypt_file(self):
+		if self.filepath == "" or None:
+			showinfo("Error", "Please select a file to encrypt first. Files must be .txt or .docx files.")
+			return
+
+		if self.file_ext != ".txt" and self.file_ext != ".docx":
+			showinfo("Error", "The selected file is not a .txt or .docx file. It cannot be encrypted.")
+			return
+
+		password = simpledialog.askstring("Enter a Password", "Please enter a password for your encrypted file. Your password must be 16, 24, or 32 characters long. 32-character passwords are the strongest.")
+
+		if len(password) != 16 and len(password) != 24 and len(password) != 32:
+			showinfo("Error", "Wrong password length. Please make sure your password is 16, 24, or 32 characters long.")
+			return
+
+		try:
+			# Encrypted files will always be named with this format: (original file name w. extention)-encrypted.bin
+			encrypted_filename = self.filename + "-encrypted.bin"
+			encrypted_filepath = self.destination_path + "/" + encrypted_filename
+
+			file_content = open(self.filepath, 'r').read()
+
+			cipher = AESCipher(password)
+			encrypted_content = cipher.encrypt(file_content)
+
+			with open(encrypted_filepath, 'wb') as encrypted_file:
+				encrypted_file.write(encrypted_content)
+				encrypted_file.close()
+
+			showinfo("Success", "Successfully encrypted " + self.filename + " to encrypted_filepath.")
+			return
+
+		except:
+			showinfo("Error", "Encryption Error.")
+			return
+
+
+	"""Decrypt the loaded file using AES-256 CFB. Files to be decrypted must be a .bin file.
+	   User-given passwords are not saved or serialized anywhere, and must be remembered by the user.
+	   Writes encrypted data to a .txt file or .docx file, depending on its original type."""
+	def decrypt_file(self):
+		if self.filepath == "" or None:
+			showinfo("Error", "Please select a file to encrypt first. Files must be .txt or .docx files.")
+			return
+
+		if self.file_ext != ".bin":
+			showinfo("Error", "The selected file is not a .txt or .docx file. It cannot be encrypted.")
+			return
+
+		password = simpledialog.askstring("Enter Your Password", "Please enter the password you used to encrypt this file.")
+
+		if len(password) != 16 and len(password) != 24 and len(password) != 32:
+			showinfo("Error", "Wrong password length. Please make sure your password is 16, 24, or 32 characters long.")
+			return
+
+		# Extract the encrypted file's extension from the given filepath, e.g.:
+		# extract txt from /Users/John/paragraph.txt-encrypted.bin.
+		# Encrypted files will always be named with this format: (original file name w. extention)-encrypted.bin
+		file_ext = self.filepath.split("/")[-1][:-14].split(".")[1]
+
+		# Decrypted filepath format: (original file name w. extention)_(decrypted).(original file extention)
+		decrypted_filepath = self.destination_path + "/" + self.filename.split(".")[0] + "_(decrypted)." + file_ext
+
+		try:
+			encrypted_content = open(self.filepath, 'rb').read()
+			cipher = AESCipher(password)
+			decrypted_content = cipher.decrypt(encrypted_content)
+		except:
+			showinfo("Error", "Cannot decrypt that file with the given password. Please recheck your password.")
+			return
+
+		if file_ext == "txt":
+			with open(decrypted_filepath, 'w+') as file:
+				file.write(decrypted_content)
+				file.close()
+
+			showinfo("Success", "Successfully decrypted selected file to " + decrypted_filepath)
+			return
+
+		elif file_ext == "docx":
+			document = Document()
+			document.add_paragraph(decrypted_content)
+			document.save(decrypted_filepath)
 
 		else:
-			try:
-				decompressed_file = huffmanCoder.decompress(compressed_filepath = self.filepath, decompression_path = self.destination_path)
-			except:
-				showinfo("Error", "Huffman Decompression Error - .txt")
-				return
-
-			showinfo("Success", "Successfully decompressed file to " + decompressed_file)
+			showinfo("Error", "Cannot decrypt that file. Please make sure you did not change the encrypted file's name, or that the selected file is actually encrypted.")
 			return
 
-		# if filetype == "docx" or filetype == "jpeg":
-		# 	filename = self.filepath.split("/")[-1][0:-9]
-		# 	data_dir_name = filename + "." + filetype
+		return
 
-		# 	if not containsDirectory(os.getcwd() + "/app/data", data_dir_name):
-		# 		showinfo("Decompression Error: Cannot Find Appropriate Huffman Tree. If you changed the file name, please restore it to its original name.")
-		# 		return
 
-			
-		# 	with open(os.getcwd() + "/app/data/" + data_dir_name + "/" + data_dir_name + "-coder.pickle", 'rb') as coder:
-		# 		huffmanCoder = pickle.load(coder)
-
-		# 	try:
-		# 		decompressed_file = huffmanCoder.decompress(compressed_filepath = self.filepath, decompression_path = self.destination_path)
-		# 	except:
-		# 		showinfo("Error", "Huffman Decompression Error - .txt")
-		# 		return
-
-		# 	showinfo("Success", "Successfully decompressed file to " + decompressed_file)
-		# 	return
+	"""Test function for printing misc. things, such as FileCase attributes."""
+	def test(self):
+		# print(self.filepath)
+		# print(self.file_ext)
+		# print(self.filename)
+		return
 
