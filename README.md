@@ -9,6 +9,10 @@ If a file is encrypted instead, the user-given password to encrypt the file is n
 
 In both cases, to maintain data persistence, the compressed/encrypted files' names cannot be changed, or the application will not be able to properly decompress/decrypt.
 
+The Huffman Coding Algorithm drastically reduces file sizes (up to 50% for ``.txt`` files, and up to 67% for ``.docx`` files): inside the ``test`` folder, you can see an uncompressed ``.docx`` file named ``test-para.docx``, which has about a page of text and has a size of 16KB. The compressed version of the file, `test-para-docx.bin`, holds only 4KB, while maintaining all the information present in the original file.
+
+Encrypted files are not compressed, as there would be very little meaning to compressing a properly encrypted file (lack of statistical patterns for compression).
+
 ### Installation
 
 FileCase was written in Python 3.6, and will not work with Python 2.
