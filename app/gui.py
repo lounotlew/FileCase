@@ -11,6 +11,8 @@ from app.huffman import HuffmanCoder
 from app.AESCipher import AESCipher
 from app.utils import *
 
+from docx import *
+
 import os
 import pickle
 
@@ -83,8 +85,8 @@ class FileCase:
 		self.encryptButton.grid(row = 4, column = 1)
 
 		# Test button.
-		self.testButton = Button(frame6, text = "Test", font = ("Helvetica", 13), command = self.test)
-		self.testButton.grid(row = 5, column = 0)
+		# self.testButton = Button(frame6, text = "Test", font = ("Helvetica", 13), command = self.test)
+		# self.testButton.grid(row = 5, column = 0)
 
 
 	"""Set SELF.FILEPATH and SELF.DESTINATION_PATH to the directory of a file the user selects, i.e. 'load the file'."""
@@ -97,7 +99,7 @@ class FileCase:
 			self.filenameLabel['text'] = "You have not selected a file yet."
 			return
 
-		showinfo("", "Please select a destination folder to save your compressed or decompressed file to.")
+		showinfo("", "Please select a destination folder to save your compressed/decompressed or encrypted/decrypted file to.")
 		self.destination_path = askdirectory()
 
 		if self.destination_path == "" or None:
@@ -231,26 +233,34 @@ class FileCase:
 			showinfo("Error", "Wrong password length. Please make sure your password is 16, 24, or 32 characters long.")
 			return
 
-		try:
+		# try:
 			# Encrypted files will always be named with this format: (original file name w. extention)-encrypted.bin
-			encrypted_filename = self.filename + "-encrypted.bin"
-			encrypted_filepath = self.destination_path + "/" + encrypted_filename
+		encrypted_filename = self.filename + "-encrypted.bin"
+		encrypted_filepath = self.destination_path + "/" + encrypted_filename
 
+		if self.file_ext == ".txt":
 			file_content = open(self.filepath, 'r').read()
 
-			cipher = AESCipher(password)
-			encrypted_content = cipher.encrypt(file_content)
+		elif self.file_ext == ".docx":
+			file_content = ""
+			document = Document(self.filepath)
 
-			with open(encrypted_filepath, 'wb') as encrypted_file:
-				encrypted_file.write(encrypted_content)
-				encrypted_file.close()
+			for para in document.paragraphs:
+				file_content += para.text
 
-			showinfo("Success", "Successfully encrypted " + self.filename + " to encrypted_filepath.")
-			return
+		cipher = AESCipher(password)
+		encrypted_content = cipher.encrypt(file_content)
 
-		except:
-			showinfo("Error", "Encryption Error.")
-			return
+		with open(encrypted_filepath, 'wb') as encrypted_file:
+			encrypted_file.write(encrypted_content)
+			encrypted_file.close()
+
+		showinfo("Success", "Successfully encrypted " + self.filename + " to " + encrypted_filepath)
+		return
+
+		# except:
+			# showinfo("Error", "Encryption Error.")
+			# return
 
 
 	"""Decrypt the loaded file using AES-256 CFB. Files to be decrypted must be a .bin file.
@@ -299,6 +309,9 @@ class FileCase:
 			document = Document()
 			document.add_paragraph(decrypted_content)
 			document.save(decrypted_filepath)
+
+			showinfo("Success", "Successfully decrypted selected file to " + decrypted_filepath)
+			return
 
 		else:
 			showinfo("Error", "Cannot decrypt that file. Please make sure you did not change the encrypted file's name, or that the selected file is actually encrypted.")
